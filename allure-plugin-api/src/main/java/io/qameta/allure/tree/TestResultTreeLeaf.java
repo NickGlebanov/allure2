@@ -40,6 +40,10 @@ public class TestResultTreeLeaf extends DefaultTreeLeaf {
 
     private final List<String> parameters;
 
+    private final String owner;
+
+    private final String tag;
+
     public TestResultTreeLeaf(final String parentUid, final TestResult testResult) {
         this(
                 parentUid,
@@ -57,6 +61,8 @@ public class TestResultTreeLeaf extends DefaultTreeLeaf {
         this.flaky = testResult.isFlaky();
         this.newFailed = testResult.isNewFailed();
         this.parameters = testResult.getParameterValues();
+        this.owner = testResult.getOwner();
+        this.tag = testResult.getTag();
 
     }
     public String getParentUid() {
