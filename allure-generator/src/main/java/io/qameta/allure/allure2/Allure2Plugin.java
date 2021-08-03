@@ -126,6 +126,13 @@ public class Allure2Plugin implements Reader {
         dest.setLabels(convert(result.getLabels(), this::convert));
         dest.setParameters(getParameters(result));
 
+        result.getLabels().stream()
+            .filter(label -> label.getName().equals("owner"))
+            .findFirst().ifPresent(label -> dest.setOwner(label.getValue()));
+        result.getLabels().stream()
+            .filter(label -> label.getName().equals("tag"))
+            .findFirst().ifPresent(label -> dest.setTag(label.getValue()));
+
         dest.addLabelIfNotExists(RESULT_FORMAT, ALLURE2_RESULTS_FORMAT);
 
         if (hasTestStage(result)) {

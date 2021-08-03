@@ -15,6 +15,24 @@
  */
 package io.qameta.allure.allure1;
 
+import static com.fasterxml.jackson.databind.MapperFeature.USE_WRAPPER_NAME_AS_PROPERTY_NAME;
+import static io.qameta.allure.entity.LabelName.ISSUE;
+import static io.qameta.allure.entity.LabelName.PACKAGE;
+import static io.qameta.allure.entity.LabelName.PARENT_SUITE;
+import static io.qameta.allure.entity.LabelName.RESULT_FORMAT;
+import static io.qameta.allure.entity.LabelName.SUB_SUITE;
+import static io.qameta.allure.entity.LabelName.SUITE;
+import static io.qameta.allure.entity.LabelName.TEST_CLASS;
+import static io.qameta.allure.entity.LabelName.TEST_METHOD;
+import static io.qameta.allure.entity.Status.BROKEN;
+import static io.qameta.allure.entity.Status.FAILED;
+import static io.qameta.allure.entity.Status.PASSED;
+import static io.qameta.allure.entity.Status.SKIPPED;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.comparing;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
+import static java.util.stream.Collectors.toList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -34,15 +52,6 @@ import io.qameta.allure.entity.Status;
 import io.qameta.allure.entity.Step;
 import io.qameta.allure.entity.TestResult;
 import io.qameta.allure.entity.Time;
-import org.allurefw.allure1.AllureUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import ru.yandex.qatools.allure.model.Description;
-import ru.yandex.qatools.allure.model.DescriptionType;
-import ru.yandex.qatools.allure.model.ParameterKind;
-import ru.yandex.qatools.allure.model.TestCaseResult;
-import ru.yandex.qatools.allure.model.TestSuiteResult;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -66,25 +75,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.fasterxml.jackson.databind.MapperFeature.USE_WRAPPER_NAME_AS_PROPERTY_NAME;
-import static io.qameta.allure.entity.LabelName.ISSUE;
-import static io.qameta.allure.entity.LabelName.PACKAGE;
-import static io.qameta.allure.entity.LabelName.PARENT_SUITE;
-import static io.qameta.allure.entity.LabelName.RESULT_FORMAT;
-import static io.qameta.allure.entity.LabelName.SUB_SUITE;
-import static io.qameta.allure.entity.LabelName.SUITE;
-import static io.qameta.allure.entity.LabelName.TEST_CLASS;
-import static io.qameta.allure.entity.LabelName.TEST_METHOD;
-import static io.qameta.allure.entity.Status.BROKEN;
-import static io.qameta.allure.entity.Status.FAILED;
-import static io.qameta.allure.entity.Status.PASSED;
-import static io.qameta.allure.entity.Status.SKIPPED;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Comparator.comparing;
-import static java.util.Comparator.naturalOrder;
-import static java.util.Comparator.nullsFirst;
-import static java.util.stream.Collectors.toList;
+import org.allurefw.allure1.AllureUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.allure.model.Description;
+import ru.yandex.qatools.allure.model.DescriptionType;
+import ru.yandex.qatools.allure.model.ParameterKind;
+import ru.yandex.qatools.allure.model.TestCaseResult;
+import ru.yandex.qatools.allure.model.TestSuiteResult;
 
 /**
  * Plugin that reads results from Allure1 data format.
@@ -92,12 +90,12 @@ import static java.util.stream.Collectors.toList;
  * @since 2.0
  */
 @SuppressWarnings({
-        "PMD.ExcessiveImports",
-        "PMD.GodClass",
-        "PMD.TooManyMethods",
-        "ClassDataAbstractionCoupling",
-        "ClassFanOutComplexity",
-        "MultipleStringLiterals"
+    "PMD.ExcessiveImports",
+    "PMD.GodClass",
+    "PMD.TooManyMethods",
+    "ClassDataAbstractionCoupling",
+    "ClassFanOutComplexity",
+    "MultipleStringLiterals"
 })
 public class Allure1Plugin implements Reader {
 
@@ -107,8 +105,8 @@ public class Allure1Plugin implements Reader {
     private static final String ISSUE_URL_PROPERTY = "allure.issues.tracker.pattern";
     private static final String TMS_LINK_PROPERTY = "allure.tests.management.pattern";
     private static final Comparator<Parameter> PARAMETER_COMPARATOR =
-            comparing(Parameter::getName, nullsFirst(naturalOrder()))
-                    .thenComparing(Parameter::getValue, nullsFirst(naturalOrder()));
+        comparing(Parameter::getName, nullsFirst(naturalOrder()))
+            .thenComparing(Parameter::getValue, nullsFirst(naturalOrder()));
 
     public static final String ENVIRONMENT_BLOCK_NAME = "environment";
     public static final String ALLURE1_RESULTS_FORMAT = "allure1";
@@ -118,28 +116,28 @@ public class Allure1Plugin implements Reader {
 
     public Allure1Plugin() {
         final SimpleModule module = new XmlParserModule()
-                .addDeserializer(ru.yandex.qatools.allure.model.Status.class, new StatusDeserializer());
+            .addDeserializer(ru.yandex.qatools.allure.model.Status.class, new StatusDeserializer());
         xmlMapper = new XmlMapper()
-                .configure(USE_WRAPPER_NAME_AS_PROPERTY_NAME, true)
-                .setAnnotationIntrospector(new JaxbAnnotationIntrospector(TypeFactory.defaultInstance()))
-                .registerModule(module);
+            .configure(USE_WRAPPER_NAME_AS_PROPERTY_NAME, true)
+            .setAnnotationIntrospector(new JaxbAnnotationIntrospector(TypeFactory.defaultInstance()))
+            .registerModule(module);
     }
 
     @Override
     public void readResults(final Configuration configuration,
-                            final ResultsVisitor visitor,
-                            final Path resultsDirectory) {
+        final ResultsVisitor visitor,
+        final Path resultsDirectory) {
         final Properties allureProperties = loadAllureProperties(resultsDirectory);
         final RandomUidContext context = configuration.requireContext(RandomUidContext.class);
 
         final Map<String, String> environment = processEnvironment(resultsDirectory);
         getStreamOfAllure1Results(resultsDirectory).forEach(testSuite -> testSuite.getTestCases()
-                .forEach(testCase -> {
-                    convert(context.getValue(), resultsDirectory, visitor, testSuite, testCase, allureProperties);
-                    getEnvironmentParameters(testCase).forEach(param ->
-                            environment.put(param.getName(), param.getValue())
-                    );
-                })
+            .forEach(testCase -> {
+                convert(context.getValue(), resultsDirectory, visitor, testSuite, testCase, allureProperties);
+                getEnvironmentParameters(testCase).forEach(param ->
+                    environment.put(param.getName(), param.getValue())
+                );
+            })
         );
 
         visitor.visitExtra(ENVIRONMENT_BLOCK_NAME, environment);
@@ -164,29 +162,29 @@ public class Allure1Plugin implements Reader {
     }
 
     @SuppressWarnings({
-            "PMD.ExcessiveMethodLength",
-            "JavaNCSS",
-            "ExecutableStatementCount",
-            "PMD.NcssCount"
+        "PMD.ExcessiveMethodLength",
+        "JavaNCSS",
+        "ExecutableStatementCount",
+        "PMD.NcssCount"
     })
     private void convert(final Supplier<String> randomUid,
-                         final Path directory,
-                         final ResultsVisitor visitor,
-                         final TestSuiteResult testSuite,
-                         final TestCaseResult source,
-                         final Properties properties) {
+        final Path directory,
+        final ResultsVisitor visitor,
+        final TestSuiteResult testSuite,
+        final TestCaseResult source,
+        final Properties properties) {
         final TestResult dest = new TestResult();
         final String suiteName = firstNonNull(testSuite.getTitle(), testSuite.getName(), "unknown test suite");
         final String testClass = firstNonNull(
-                findLabelValue(source.getLabels(), TEST_CLASS.value()),
-                findLabelValue(testSuite.getLabels(), TEST_CLASS.value()),
-                testSuite.getName(),
-                UNKNOWN
+            findLabelValue(source.getLabels(), TEST_CLASS.value()),
+            findLabelValue(testSuite.getLabels(), TEST_CLASS.value()),
+            testSuite.getName(),
+            UNKNOWN
         );
         final String testMethod = firstNonNull(
-                findLabelValue(source.getLabels(), TEST_METHOD.value()),
-                source.getName(),
-                UNKNOWN
+            findLabelValue(source.getLabels(), TEST_METHOD.value()),
+            source.getName(),
+            UNKNOWN
         );
         final String name = firstNonNull(source.getTitle(), source.getName(), "unknown test case");
 
@@ -197,6 +195,14 @@ public class Allure1Plugin implements Reader {
         } else {
             dest.setHistoryId(getHistoryId(String.format("%s#%s", testClass, name), parameters));
         }
+
+        source.getLabels().stream()
+            .filter(label -> label.getName().equals("owner"))
+            .findFirst().ifPresent(label -> dest.setOwner(label.getValue()));
+        source.getLabels().stream()
+            .filter(label -> label.getName().equals("tag"))
+            .findFirst().ifPresent(label -> dest.setTag(label.getValue()));
+
         dest.setUid(randomUid.get());
         dest.setName(name);
         dest.setFullName(String.format("%s.%s", testClass, testMethod));
@@ -232,18 +238,18 @@ public class Allure1Plugin implements Reader {
         }
 
         final Set<Label> set = new TreeSet<>(
-                comparing(Label::getName, nullsFirst(naturalOrder()))
-                        .thenComparing(Label::getValue, nullsFirst(naturalOrder()))
+            comparing(Label::getName, nullsFirst(naturalOrder()))
+                .thenComparing(Label::getValue, nullsFirst(naturalOrder()))
         );
         set.addAll(convert(testSuite.getLabels(), this::convert));
         set.addAll(convert(source.getLabels(), this::convert));
         dest.setLabels(new ArrayList<>(set));
         dest.findAllLabels(ISSUE).forEach(issue ->
-                dest.getLinks().add(getLink(ISSUE, issue, getIssueUrl(issue, properties)))
+            dest.getLinks().add(getLink(ISSUE, issue, getIssueUrl(issue, properties)))
         );
         dest.findOneLabel("testId").ifPresent(testId ->
-                dest.getLinks().add(new Link().setName(testId).setType("tms")
-                        .setUrl(getTestCaseIdUrl(testId, properties)))
+            dest.getLinks().add(new Link().setName(testId).setType("tms")
+                .setUrl(getTestCaseIdUrl(testId, properties)))
         );
 
         //TestNG nested suite
@@ -262,9 +268,9 @@ public class Allure1Plugin implements Reader {
         dest.addLabelIfNotExists(TEST_METHOD, testMethod);
         dest.addLabelIfNotExists(PACKAGE, testClass);
         dest.findAllLabels("status_details").stream()
-                .filter("flaky"::equalsIgnoreCase)
-                .findAny()
-                .ifPresent(value -> dest.setFlaky(true));
+            .filter("flaky"::equalsIgnoreCase)
+            .findAny()
+            .ifPresent(value -> dest.setFlaky(true));
         dest.addLabelIfNotExists(RESULT_FORMAT, ALLURE1_RESULTS_FORMAT);
         visitor.visitTestResult(dest);
     }
@@ -274,30 +280,30 @@ public class Allure1Plugin implements Reader {
     }
 
     private <T, R> List<R> convert(final Collection<T> source,
-                                   final Predicate<T> predicate,
-                                   final Function<T, R> converter) {
+        final Predicate<T> predicate,
+        final Function<T, R> converter) {
         return Objects.isNull(source) ? null : source.stream()
-                .filter(predicate)
-                .map(converter)
-                .collect(toList());
+            .filter(predicate)
+            .map(converter)
+            .collect(toList());
     }
 
     private Step convert(final Path source,
-                         final ResultsVisitor visitor,
-                         final ru.yandex.qatools.allure.model.Step s,
-                         final Status testStatus,
-                         final String message,
-                         final String trace) {
+        final ResultsVisitor visitor,
+        final ru.yandex.qatools.allure.model.Step s,
+        final Status testStatus,
+        final String message,
+        final String trace) {
         final Status status = convert(s.getStatus());
         final Step current = new Step()
-                .setName(s.getTitle() == null ? s.getName() : s.getTitle())
-                .setTime(new Time()
-                        .setStart(s.getStart())
-                        .setStop(s.getStop())
-                        .setDuration(s.getStop() - s.getStart()))
-                .setStatus(status)
-                .setSteps(convert(s.getSteps(), step -> convert(source, visitor, step, testStatus, message, trace)))
-                .setAttachments(convert(s.getAttachments(), attach -> convert(source, visitor, attach)));
+            .setName(s.getTitle() == null ? s.getName() : s.getTitle())
+            .setTime(new Time()
+                .setStart(s.getStart())
+                .setStop(s.getStop())
+                .setDuration(s.getStop() - s.getStart()))
+            .setStatus(status)
+            .setSteps(convert(s.getSteps(), step -> convert(source, visitor, step, testStatus, message, trace)))
+            .setAttachments(convert(s.getAttachments(), attach -> convert(source, visitor, attach)));
         //Copy test status details to each step set the same status
         if (Objects.equals(status, testStatus)) {
             current.setStatusMessage(message);
@@ -308,19 +314,19 @@ public class Allure1Plugin implements Reader {
 
     private Label convert(final ru.yandex.qatools.allure.model.Label label) {
         return new Label()
-                .setName(label.getName())
-                .setValue(label.getValue());
+            .setName(label.getName())
+            .setValue(label.getValue());
     }
 
     private Parameter convert(final ru.yandex.qatools.allure.model.Parameter parameter) {
         return new Parameter()
-                .setName(parameter.getName())
-                .setValue(parameter.getValue());
+            .setName(parameter.getName())
+            .setValue(parameter.getValue());
     }
 
     private Attachment convert(final Path source,
-                               final ResultsVisitor visitor,
-                               final ru.yandex.qatools.allure.model.Attachment attachment) {
+        final ResultsVisitor visitor,
+        final ru.yandex.qatools.allure.model.Attachment attachment) {
         final Path attachmentFile = source.resolve(attachment.getSource());
         if (Files.isRegularFile(attachmentFile)) {
             final Attachment found = visitor.visitAttachmentFile(attachmentFile);
@@ -334,9 +340,9 @@ public class Allure1Plugin implements Reader {
         } else {
             visitor.error("Could not find attachment " + attachment.getSource() + " in directory " + source);
             return new Attachment()
-                    .setType(attachment.getType())
-                    .setName(attachment.getTitle())
-                    .setSize(0L);
+                .setType(attachment.getType())
+                .setName(attachment.getTitle())
+                .setSize(0L);
         }
     }
 
@@ -363,8 +369,8 @@ public class Allure1Plugin implements Reader {
 
     private List<Parameter> getParameters(final TestCaseResult source) {
         final TreeSet<Parameter> parametersSet = new TreeSet<>(
-                comparing(Parameter::getName, nullsFirst(naturalOrder()))
-                        .thenComparing(Parameter::getValue, nullsFirst(naturalOrder()))
+            comparing(Parameter::getName, nullsFirst(naturalOrder()))
+                .thenComparing(Parameter::getValue, nullsFirst(naturalOrder()))
         );
         parametersSet.addAll(convert(source.getParameters(), this::hasArgumentType, this::convert));
         return new ArrayList<>(parametersSet);
@@ -372,18 +378,18 @@ public class Allure1Plugin implements Reader {
 
     private String getDescription(final Description... descriptions) {
         return Stream.of(descriptions)
-                .filter(Objects::nonNull)
-                .filter(isHtmlDescription().negate())
-                .map(Description::getValue)
-                .collect(Collectors.joining("\n\n"));
+            .filter(Objects::nonNull)
+            .filter(isHtmlDescription().negate())
+            .map(Description::getValue)
+            .collect(Collectors.joining("\n\n"));
     }
 
     private String getDescriptionHtml(final Description... descriptions) {
         return Stream.of(descriptions)
-                .filter(Objects::nonNull)
-                .filter(isHtmlDescription())
-                .map(Description::getValue)
-                .collect(Collectors.joining("</br>"));
+            .filter(Objects::nonNull)
+            .filter(isHtmlDescription())
+            .map(Description::getValue)
+            .collect(Collectors.joining("</br>"));
     }
 
     private Predicate<Description> isHtmlDescription() {
@@ -392,17 +398,17 @@ public class Allure1Plugin implements Reader {
 
     private String findLabelValue(final List<ru.yandex.qatools.allure.model.Label> labels, final String labelName) {
         return labels.stream()
-                .filter(label -> labelName.equals(label.getName()))
-                .map(ru.yandex.qatools.allure.model.Label::getValue)
-                .findAny()
-                .orElse(null);
+            .filter(label -> labelName.equals(label.getName()))
+            .map(ru.yandex.qatools.allure.model.Label::getValue)
+            .findAny()
+            .orElse(null);
     }
 
     private Optional<ru.yandex.qatools.allure.model.Label> findLabel(
-            final List<ru.yandex.qatools.allure.model.Label> labels, final String labelName) {
+        final List<ru.yandex.qatools.allure.model.Label> labels, final String labelName) {
         return labels.stream()
-                .filter(label -> labelName.equals(label.getName()))
-                .findAny();
+            .filter(label -> labelName.equals(label.getName()))
+            .findAny();
     }
 
     private boolean hasArgumentType(final ru.yandex.qatools.allure.model.Parameter parameter) {
@@ -432,10 +438,10 @@ public class Allure1Plugin implements Reader {
     private Stream<TestSuiteResult> xmlFiles(final Path source) {
         try {
             return AllureUtils.listTestSuiteXmlFiles(source)
-                    .stream()
-                    .map(this::readXmlTestSuiteFile)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get);
+                .stream()
+                .map(this::readXmlTestSuiteFile)
+                .filter(Optional::isPresent)
+                .map(Optional::get);
         } catch (IOException e) {
             LOGGER.error("Could not list allure1 xml files", e);
             return Stream.empty();
@@ -445,10 +451,10 @@ public class Allure1Plugin implements Reader {
     private Stream<TestSuiteResult> jsonFiles(final Path source) {
         try {
             return AllureUtils.listTestSuiteJsonFiles(source)
-                    .stream()
-                    .map(this::readJsonTestSuiteFile)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get);
+                .stream()
+                .map(this::readJsonTestSuiteFile)
+                .filter(Optional::isPresent)
+                .map(Optional::get);
         } catch (IOException e) {
             LOGGER.error("Could not list allure1 json files", e);
             return Stream.empty();
@@ -476,22 +482,22 @@ public class Allure1Plugin implements Reader {
     @SafeVarargs
     private static <T> T firstNonNull(final T... items) {
         return Stream.of(items)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "firstNonNull method should have at least one non null parameter"
-                ));
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException(
+                "firstNonNull method should have at least one non null parameter"
+            ));
     }
 
     private static String getHistoryId(final String name, final List<Parameter> parameters) {
         final MessageDigest digest = getMessageDigest();
         digest.update(name.getBytes(UTF_8));
         parameters.stream()
-                .sorted(PARAMETER_COMPARATOR)
-                .forEachOrdered(parameter -> {
-                    digest.update(Objects.toString(parameter.getName()).getBytes(UTF_8));
-                    digest.update(Objects.toString(parameter.getValue()).getBytes(UTF_8));
-                });
+            .sorted(PARAMETER_COMPARATOR)
+            .forEachOrdered(parameter -> {
+                digest.update(Objects.toString(parameter.getName()).getBytes(UTF_8));
+                digest.update(Objects.toString(parameter.getValue()).getBytes(UTF_8));
+            });
         final byte[] bytes = digest.digest();
         return new BigInteger(1, bytes).toString(16);
     }
@@ -534,7 +540,7 @@ public class Allure1Plugin implements Reader {
         if (Files.exists(envXmlFile)) {
             try (InputStream fis = Files.newInputStream(envXmlFile)) {
                 xmlMapper.readValue(fis, ru.yandex.qatools.commons.model.Environment.class).getParameter().forEach(p ->
-                        items.put(p.getKey(), p.getValue())
+                    items.put(p.getKey(), p.getValue())
                 );
             } catch (Exception e) {
                 LOGGER.error("Could not read environment.xml file " + envXmlFile.toAbsolutePath(), e);

@@ -58,6 +58,11 @@ public class TestResult implements Serializable, Nameable, Parameterizable, Stat
     protected boolean flaky;
     protected boolean newFailed;
 
+    protected String owner;
+    protected String tag;
+
+
+
     //    Execution
     protected List<StageResult> beforeStages = new ArrayList<>();
     protected StageResult testStage;
