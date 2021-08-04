@@ -34,20 +34,34 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-allprojects {
+/*allprojects {
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
     }
-}
+    plugins.withId("maven-publish") {
+        configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "allure-epgu"
+                    val baseUrl = "http://nesus.test:8081"
+                    val releasesUrl = "$baseUrl/repository/maven-releases"
+                    val snapshotsUrl = "$baseUrl/repository/maven-snapshots"
+                    val release = !project.version.toString().endsWith("-SNAPSHOT")
+                    url = uri(if (release) releasesUrl else snapshotsUrl)
+*//*                    credentials {
+                        username = "xxx"
+                        password = "xxx"
+                    }*//*
+                }
+            }
+        }
+    }
+}*/
 
 description = "Allure Report"
 group = "io.qameta.allure"
 
-nexusPublishing {
-    repositories {
-        sonatype()
-    }
-}
+
 
 subprojects {
     group = if (project.name.endsWith("plugin")) {
@@ -204,17 +218,17 @@ subprojects {
     tasks.withType<GenerateModuleMetadata>().configureEach {
         enabled = false
     }
-    
+
     publishing {
         publications {
             create<MavenPublication>("maven") {
                 from(components["java"])
                 suppressAllPomMetadataWarnings()
-                pom {
-                    name.set(project.name)
-                    description.set("Module ${project.name} of Allure Framework.")
-                    url.set("https://github.com/allure-framework/allure2")
-                    licenses {
+                /* pom {
+                     name.set(project.name)
+                     description.set("Module ${project.name} of Allure Framework.")
+                     url.set("http://nesus.test:8081")
+                     *//*licenses {
                         license {
                             name.set("The Apache License, Version 2.0")
                             url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
@@ -231,83 +245,106 @@ subprojects {
                             name.set("Artem Eroshenko")
                             email.set("artem.eroshenko@qameta.io")
                         }
-                    }
-                    scm {
+                    }*//*
+*//*                    scm {
                         developerConnection.set("scm:git:git://github.com/allure-framework/allure2")
                         connection.set("scm:git:git://github.com/allure-framework/allure2")
                         url.set("https://github.com/allure-framework/allure2")
-                    }
-                    issueManagement {
+                    }*//*
+*//*                    issueManagement {
                         system.set("GitHub Issues")
                         url.set("https://github.com/allure-framework/allure2/issues")
-                    }
-                    versionMapping {
+                    }*//*
+*//*                    versionMapping {
                         usage("java-api") {
                             fromResolutionOf("runtimeClasspath")
                         }
                         usage("java-runtime") {
                             fromResolutionResult()
                         }
+                    }*//*
+                }*/
+                allprojects {
+                    plugins.withId("maven-publish") {
+                        configure<PublishingExtension> {
+                            repositories {
+                                maven {
+                                    name = "allure-epgu"
+                                    val baseUrl = "http://nesus.test:8081"
+                                    val releasesUrl = "$baseUrl/repository/maven-releases"
+                                    val snapshotsUrl = "$baseUrl/repository/maven-snapshots"
+                                    val release = !project.version.toString().endsWith("-SNAPSHOT")
+                                    url = uri("http://nexus.test:8081/repository/maven-local/")//uri(if (release) releasesUrl else snapshotsUrl)
+                                    credentials {
+                                        username = "admin"
+                                        password = "admin"
+                                    }
+                                    metadataSources {
+                                        artifact()
+                                    }
+                                }
+                            }
+                        }
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Developers do not always have PGP configured,
-    // so activate signing for release versions only
-    // Just in case Maven Central rejects signed snapshots for some reason
-    if (!version.toString().endsWith("-SNAPSHOT")) {
-        signing {
-            sign(publishing.publications["maven"])
+        // Developers do not always have PGP configured,
+        // so activate signing for release versions only
+        // Just in case Maven Central rejects signed snapshots for some reason
+        if (!version.toString().endsWith("-SNAPSHOT")) {
+            signing {
+                sign(publishing.publications["maven"])
+            }
+        }
+
+        val allurePlugin by configurations.creating {
+            isCanBeResolved = true
+            isCanBeConsumed = true
+            attributes {
+                attribute(Category.CATEGORY_ATTRIBUTE, objects.named("allure-plugin"))
+            }
+        }
+
+        val pluginsDir = "$buildDir/plugins/"
+        val copyPlugins by tasks.creating(Sync::class) {
+            group = "Build"
+            dependsOn(allurePlugin)
+            into(pluginsDir)
+            from(provider { allurePlugin.map { if (it.isDirectory) it else zipTree(it) } })
+            eachFile {
+                val segments = relativePath.segments
+                segments[0] = segments[0].replace("-${project.version}", "")
+            }
+            includeEmptyDirs = false
+        }
+
+        repositories {
+            mavenLocal()
+            mavenCentral()
         }
     }
 
-    val allurePlugin by configurations.creating {
-        isCanBeResolved = true
-        isCanBeConsumed = true
-        attributes {
-            attribute(Category.CATEGORY_ATTRIBUTE, objects.named("allure-plugin"))
-        }
-    }
+    apply(plugin = "com.bmuschko.docker-remote-api")
 
-    val pluginsDir = "$buildDir/plugins/"
-    val copyPlugins by tasks.creating(Sync::class) {
+    val deleteDemoReport by tasks.creating(Delete::class) {
         group = "Build"
-        dependsOn(allurePlugin)
-        into(pluginsDir)
-        from(provider { allurePlugin.map { if (it.isDirectory) it else zipTree(it) } })
-        eachFile {
-            val segments = relativePath.segments
-            segments[0] = segments[0].replace("-${project.version}", "")
-        }
-        includeEmptyDirs = false
+        delete("$root/build/docker/report")
     }
 
-    repositories {
-        mavenLocal()
-        mavenCentral()
+    val generateDemoReport by tasks.creating(Exec::class) {
+        group = "Build"
+        dependsOn("deleteDemoReport", "allure-commandline:build")
+        executable = "$root/allure-commandline/build/install/allure/bin/allure"
+        args("generate", "$root/allure-web/test-data/demo", "-o", "$root/build/docker/report")
     }
-}
 
-apply(plugin = "com.bmuschko.docker-remote-api")
-
-val deleteDemoReport by tasks.creating(Delete::class) {
-    group = "Build"
-    delete("$root/build/docker/report")
-}
-
-val generateDemoReport by tasks.creating(Exec::class) {
-    group = "Build"
-    dependsOn("deleteDemoReport", "allure-commandline:build")
-    executable = "$root/allure-commandline/build/install/allure/bin/allure"
-    args("generate", "$root/allure-web/test-data/demo", "-o", "$root/build/docker/report")
-}
-
-val generateDemoDockerfile by tasks.creating(Dockerfile::class) {
-    group = "Build"
-    dependsOn("generateDemoReport")
-    destFile.set(file("build/docker/Dockerfile"))
-    from("nginx")
-    addFile("report", "/usr/share/nginx/html")
-}
+    val generateDemoDockerfile by tasks.creating(Dockerfile::class) {
+        group = "Build"
+        dependsOn("generateDemoReport")
+        destFile.set(file("build/docker/Dockerfile"))
+        from("nginx")
+        addFile("report", "/usr/share/nginx/html")
+    }

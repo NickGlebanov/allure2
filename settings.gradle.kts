@@ -1,4 +1,4 @@
-rootProject.name = "allure2"
+rootProject.name = "allure2-epgu"
 
 include("allure-jira-commons")
 include("allure-plugin-api")

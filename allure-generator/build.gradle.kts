@@ -65,6 +65,38 @@ val cleanUpDemoReport by tasks.creating(Delete::class) {
     delete(file("build/demo-report"))
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven1") {
+            from(components["java"])
+            suppressAllPomMetadataWarnings()
+            plugins.withId("maven-publish") {
+                configure<PublishingExtension> {
+                    repositories {
+                        maven {
+                            name = "allure-epgu"
+                            val baseUrl = "http://nesus.test:8081"
+                            val releasesUrl = "$baseUrl/repository/maven-releases"
+                            val snapshotsUrl = "$baseUrl/repository/maven-snapshots"
+                            val release = !project.version.toString().endsWith("-SNAPSHOT")
+                            url = uri("http://nexus.test:8081/repository/maven-local/")//uri(if (release) releasesUrl else snapshotsUrl)
+                            credentials {
+                                username = "admin"
+                                password = "admin"
+                            }
+                            metadataSources {
+                                artifact()
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+
 val generateDemoReport by tasks.creating(JavaExec::class) {
     group = "Documentation"
     dependsOn(cleanUpDemoReport, tasks.named("copyPlugins"))
