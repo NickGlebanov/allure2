@@ -1,30 +1,74 @@
 [
   {
-    "name": "Ignored tests",
-    "messageRegex": ".*ignored.*",
-    "matchedStatuses": [
-      "skipped"
-    ]
+    "name": "Плейсхолдеры на странице [99% AN BUG]",
+    "messageRegex": ".*The page contains following placeholders.*"
   },
   {
-    "name": "Infrastructure problems",
-    "messageRegex": ".*RuntimeException.*",
-    "matchedStatuses": [
-      "broken"
-    ]
+    "name": "Плейсхолдеры в XML [99% AN BUG]",
+    "traceRegex": ".*(Проверка сгенеренной XML: остались плейсхолдеры|При генерации .* в тексте остались следущие плейсхолдеры).*"
   },
   {
-    "name": "Outdated tests",
-    "messageRegex": ".*FileNotFound.*",
-    "matchedStatuses": [
-      "broken"
-    ]
+    "name": "Плейсхолдеры в XML [99% AN BUG]",
+    "messageRegex": ".*Document.*XML.*contains.*placeholder.*"
   },
   {
-    "name": "Regression",
-    "messageRegex": ".*\\sException:.*",
-    "matchedStatuses": [
-      "broken"
-    ]
+    "name": "Json содержит ссылки на UAT/DEV [99% AN BUG]",
+    "traceRegex": ".*JsonLinksTest.checkUatUrls.*"
+  },
+  {
+    "name": "Плейсхолдеры в PDF [99% AN BUG]",
+    "messageRegex": ".*Document \\[PDF\\] contains \\d+ placeholder.*"
+  },
+  {
+    "name": "Отсутствующий шаблон XML/PDF [99% AN BUG]",
+    "traceRegex": ".*ErrorMessage.*Error getting template file.*"
+  },
+  {
+    "name": "Ошибки валидации XML по схеме [80% AN BUG, возможно надо обновить схему]",
+    "messageRegex": ".*Schema validation error.*"
+  },
+  {
+    "name": "Ошибки проверки XML [60% AN BUG, возможно ошибка в самом тесте]",
+    "messageRegex": ".*Multiple Failures.*AutoCloseableXmlAssertions.*"
+  },
+  {
+    "name": "NPE на бэке [60% BE BUG, возможно ошибка в заглушке или json]",
+    "traceRegex": ".*ErrorMessage.*(Unexpected server error: null).*"
+  },
+  {
+    "name": "Ошибки переходов в JSON [99% AN BUG]",
+    "traceRegex": ".*ErrorMessage.*(экран.* для перехода|Не найден экран с идентификатором).*"
+  },
+  {
+    "name": "Ошибки построения маршрутов [50 на 50 либо баг в json, либо надо править тест]",
+    "messageRegex": ".*(There are \\d+ broken routes|No routes found for).*"
+  },
+  {
+    "name": "Дублирующийся экран/компонент в JSON [100% AN BUG]",
+    "traceRegex": ".*Duplicate key.*"
+  },
+  {
+    "name": "Отсутствующий компонент в JSON [100% AN BUG]",
+    "traceRegex": ".*ErrorMessage.*(Cannot find fieldComponent).*"
+  },
+  {
+    "name": "Возможно, некорректный запрос справочника выбора подразделений [90% BUG]",
+    "traceRegex": ".*MapValidationSteps.*"
+  },
+  {
+    "name": "Возможно, некорректный запрос слотов [90% BUG]",
+    "traceRegex": ".*SlotValidationSteps.*"
+  },
+  {
+    "name": "Визуальная регрессия",
+    "messageRegex": ".*Скриншоты не совпадают.*"
+  },
+  {
+    "name": "Грамматические ошибки",
+    "messageRegex": ".*Обнаружено.*грамматических ошибок.*"
+  },
+  {
+    "name": "Инфраструктурные проблемы",
+    "traceRegex": ".*the server responded with a status of 50[23].*"
   }
 ]
