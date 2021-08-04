@@ -19,13 +19,15 @@ function byDuration(min, max) {
 function byText(text) {
   text = (text && text.toLowerCase()) || "";
   return (child) => {
+    const glued = [child.name, child.owner, child.tag].filter(Boolean).join("");
     return (
       !text ||
-      child.name.toLowerCase().indexOf(text) > -1 ||
+      glued.toLowerCase().indexOf(text) > -1 ||
       (child.children && child.children.some(byText(text)))
     );
   };
 }
+
 
 function byMark(marks) {
   return (child) => {

@@ -18,7 +18,6 @@ package io.qameta.allure.tree;
 import io.qameta.allure.entity.Status;
 import io.qameta.allure.entity.TestResult;
 import io.qameta.allure.entity.Time;
-
 import java.util.List;
 
 /**
@@ -46,9 +45,9 @@ public class TestResultTreeLeaf extends DefaultTreeLeaf {
 
     public TestResultTreeLeaf(final String parentUid, final TestResult testResult) {
         this(
-                parentUid,
-                testResult.getName(),
-                testResult
+            parentUid,
+            testResult.getName(),
+            testResult
         );
     }
 
@@ -65,6 +64,7 @@ public class TestResultTreeLeaf extends DefaultTreeLeaf {
         this.tag = testResult.getTag();
 
     }
+
     public String getParentUid() {
         return parentUid;
     }
@@ -92,4 +92,9 @@ public class TestResultTreeLeaf extends DefaultTreeLeaf {
     public List<String> getParameters() {
         return parameters;
     }
+
+    public String getOwner() { return owner; }
+
+    public String getTag() { return tag; }
+
 }
