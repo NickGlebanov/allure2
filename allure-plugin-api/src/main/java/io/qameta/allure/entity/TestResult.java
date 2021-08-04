@@ -58,8 +58,8 @@ public class TestResult implements Serializable, Nameable, Parameterizable, Stat
     protected boolean flaky;
     protected boolean newFailed;
 
-    protected String owner;
-    protected String tag;
+    protected String owner = "";
+    protected String tag = "";
 
 
 
