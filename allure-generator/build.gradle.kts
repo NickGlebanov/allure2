@@ -97,6 +97,7 @@ tasks.test {
 val allurePlugin by configurations.existing
 
 dependencies {
+    allurePlugin(project(path = ":epgu-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":behaviors-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":packages-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":screen-diff-plugin", configuration = "allurePlugin"))

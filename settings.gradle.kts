@@ -7,6 +7,7 @@ include("allure-commandline")
 
 val plugins = listOf(
         "behaviors-plugin",
+        "epgu-plugin",
         "custom-logo-plugin",
         "jira-plugin",
         "junit-xml-plugin",

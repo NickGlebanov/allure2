@@ -116,6 +116,7 @@ publishing {
 
 
 dependencies {
+    allurePlugin(project(path = ":epgu-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":behaviors-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":custom-logo-plugin", configuration = "allurePlugin"))
     allurePlugin(project(path = ":jira-plugin", configuration = "allurePlugin"))
